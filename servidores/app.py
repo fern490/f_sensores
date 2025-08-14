@@ -19,4 +19,4 @@ def escribir_valor():
 
     print(f"Sensor: {sensor_name}, Valor: {valor}")
 
-    return "ok"
+    return "OK"
