@@ -1,5 +1,5 @@
 import sqlite3
-from flask import Flask, g, jsonify, request, url_for
+from flask import Flask, g, jsonify, request, url_for, render_template
 from math import ceil
 
 app = Flask(__name__)
@@ -35,11 +35,49 @@ def escribir_valor():
     datos = request.get_json()
 
     valor = datos.get('valor')
-    sensor_name = datos.get('sensor_name')
+    nombre = datos.get('nombre')
 
-    print(f"Sensor: {sensor_name}, Valor: {valor}")
+    if valor is None or nombre is None:
+        return jsonify({"error": "Faltan datos"}), 400
 
-    return "OK"
+    db = abrirConexion()
+    cursor = db.cursor()
+    cursor.execute(
+        "INSERT INTO valores (nombre, valor) VALUES (?, ?)",
+        (nombre, valor)
+    )
+    db.commit()
+
+    print(f"Sensor: {nombre}, Valor: {valor} (guardado en DB)")
+
+    return jsonify({"resultado": "OK"})
+
+@app.route("/api/valores", methods=['GET'])
+def listar_valores():
+    args = request.args
+    pagina = int(args.get("page", 1))
+    descartar = (pagina - 1) * resultados_por_pag
+
+    db = abrirConexion()
+    cursor = db.cursor()
+
+    cursor.execute("SELECT COUNT(*) AS cant FROM valores;")
+    cant = cursor.fetchone()["cant"]
+    paginas = ceil(cant / resultados_por_pag) if cant > 0 else 1
+
+    if pagina < 1 or pagina > paginas:
+        return jsonify({"error": f"Página inexistente: {pagina}"}), 400
+
+    # obtener registros paginados
+    cursor.execute(
+        """SELECT id, nombre, valor, fecha_hora FROM valores
+           ORDER BY fecha_hora DESC
+           LIMIT ? OFFSET ?;""",
+        (resultados_por_pag, descartar),
+    )
+    lista = cursor.fetchall()
+
+    return jsonify({"results": lista})
 
 if __name__ == '__main__':
     app.run(debug=True)
