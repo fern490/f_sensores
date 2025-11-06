@@ -1,3 +1,12 @@
+#Monitor de consumo para un panel solar
+#Componentes: ESP32 + sensor de tensión y corriente (ACS712 o INA219) + Pantalal OLED
+#Funciones:
+#Mide corriente y voltaje, calcula potencia y consumo acumulado.
+#Muestra en la OLED potencia instantánea y consumo total.
+#Envía los datos a una API o base de datos remota.
+#Usa pandas y pyplot para graficar consumo diario o por hora.
+#💡: Alerta si se supera cierto límite de potencia (mostrando un aviso en pantalla).
+
 import sqlite3
 from flask import Flask, g, jsonify, request, url_for, render_template
 from math import ceil
