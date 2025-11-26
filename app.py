@@ -11,6 +11,24 @@ import sqlite3
 from flask import Flask, g, jsonify, request, url_for
 from math import ceil
 
+conn = sqlite3.connect("sensores.sqlite")
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS mediciones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    voltaje REAL,
+    corriente REAL,
+    potencia REAL,
+    wh_total REAL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+conn.commit()
+conn.close()
+
+
 def dict_factory(cursor, row):
   """Arma un diccionario con los valores de la fila."""
   fields = [column[0] for column in cursor.description]
@@ -34,11 +52,30 @@ app.teardown_appcontext(cerrarConexion)
 def test():
     return "funcionando!"
 
-@app.route("/api/sensor", methods=['POST'])
+@app.route("/api/sensor", methods=['GET', 'POST'])
 def sensor():
-    datos = request.json
-    nombre = datos["nombre"]
-    valor = datos["valor"]
-    print(f"nombre del sensor {nombre}, valor: {valor}")
-    return "OK"
+    db = abrirConexion()
 
+    if request.method == 'POST':
+        datos = request.json
+
+        volt = datos.get("voltaje")
+        amp = datos.get("corriente")
+        pot = datos.get("potencia")
+        wh  = datos.get("wh_total")
+
+        db.execute("""
+            INSERT INTO mediciones (voltaje, corriente, potencia, wh_total)
+            VALUES (?, ?, ?, ?)
+        """, (volt, amp, pot, wh))
+        db.commit()
+
+        return jsonify({
+            "status": "OK",
+            "msg": "Medición almacenada correctamente",
+            "values": datos
+        })
+
+    if request.method == 'GET':
+        registros = db.execute("SELECT * FROM mediciones ORDER BY id DESC").fetchall()
+        return jsonify(registros)
