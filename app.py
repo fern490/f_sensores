@@ -30,15 +30,14 @@ conn.close()
 
 
 def dict_factory(cursor, row):
-  """Arma un diccionario con los valores de la fila."""
-  fields = [column[0] for column in cursor.description]
-  return {key: value for key, value in zip(fields, row)}
+    fields = [column[0] for column in cursor.description]
+    return {key: value for key, value in zip(fields, row)}
 
 def abrirConexion():
-   if 'db' not in g:
-      g.db = sqlite3.connect("sensores.sqlite")
-      g.db.row_factory = dict_factory
-   return g.db
+    if 'db' not in g:
+        g.db = sqlite3.connect("sensores.sqlite")
+        g.db.row_factory = dict_factory
+    return g.db
 
 def cerrarConexion(e=None):
     db = g.pop('db', None)
@@ -52,30 +51,12 @@ app.teardown_appcontext(cerrarConexion)
 def test():
     return "funcionando!"
 
-@app.route("/api/sensor", methods=['GET', 'POST'])
+@app.route("/api/sensor", methods=['POST'])
 def sensor():
-    db = abrirConexion()
+    datos = request.json
+    nombre = datos["nombre"]
+    valor = datos["valor"]
 
-    if request.method == 'POST':
-        datos = request.json
+    print(f"nombre del sensor {nombre}, valor: {valor}")
 
-        volt = datos.get("voltaje")
-        amp = datos.get("corriente")
-        pot = datos.get("potencia")
-        wh  = datos.get("wh_total")
-
-        db.execute("""
-            INSERT INTO mediciones (voltaje, corriente, potencia, wh_total)
-            VALUES (?, ?, ?, ?)
-        """, (volt, amp, pot, wh))
-        db.commit()
-
-        return jsonify({
-            "status": "OK",
-            "msg": "Medición almacenada correctamente",
-            "values": datos
-        })
-
-    if request.method == 'GET':
-        registros = db.execute("SELECT * FROM mediciones ORDER BY id DESC").fetchall()
-        return jsonify(registros)
+    return "OK"
